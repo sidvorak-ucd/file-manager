@@ -1,46 +1,71 @@
-data "archive_file" "lambda_zip" {
+data "archive_file" "lambda_package" {
   type        = "zip"
-  source_dir  = "${path.module}/../backend/" # Use source_dir to zip the entire backend directory
-  output_path = "${path.module}/../backend/lambda_package.zip"
+  source_dir  = "${path.module}/../backend/"
+  output_path = "${path.module}/../backend/lambda_package.zip" # Output path for the generated zip
+
+  # Exclude files not needed in the Lambda package
+  excludes = [
+    ".gitignore",
+    "package-lock.json",
+    "README.md" # Add any other files/dirs to exclude
+  ]
 }
 
-resource "aws_lambda_function" "api_handler" {
-  function_name = "${var.project_name}-api-handler"
+# Lambda function for Listing Files (GET /files)
+resource "aws_lambda_function" "list_files" {
+  function_name = "${var.project_name}-list-files"
   role          = aws_iam_role.lambda_exec_role.arn
 
-  # Point to the deployment package
-  filename         = data.archive_file.lambda_zip.output_path
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  filename         = data.archive_file.lambda_package.output_path
+  source_code_hash = data.archive_file.lambda_package.output_base64sha256
 
-  # Specify runtime and handler
-  handler = "index.handler" # Assuming entry point is exports.handler in index.js
-  runtime = "nodejs18.x"    # Or nodejs20.x, etc., based on backend development choice
+  handler = "handlers/list-files.handler" # Points to list-files.js -> exports.handler
+  runtime = "nodejs18.x"
 
-  # Set environment variables needed by the function
   environment {
     variables = {
-      S3_BUCKET_NAME       = aws_s3_bucket.file_storage.bucket
-      DYNAMODB_TABLE_NAME  = aws_dynamodb_table.file_metadata.name
-      COGNITO_USER_POOL_ID = aws_cognito_user_pool.user_pool.id # Potentially needed for user context
+      # Only needs DynamoDB table name
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.file_metadata.name
     }
   }
-
-  # Optional: Configure memory, timeout, etc.
-  # memory_size = 256
-  # timeout     = 30 
-
   tags = var.tags
 }
 
-# Output Lambda function details
-output "lambda_function_name" {
-  value = aws_lambda_function.api_handler.function_name
+# Lambda function for Deleting Files (DELETE /files/{key})
+resource "aws_lambda_function" "delete_file" {
+  function_name = "${var.project_name}-delete-file"
+  role          = aws_iam_role.lambda_exec_role.arn # Using shared role for now
+
+  filename         = data.archive_file.lambda_package.output_path
+  source_code_hash = data.archive_file.lambda_package.output_base64sha256
+
+  handler = "handlers/delete-file.handler" # Points to delete-file.js -> exports.handler
+  runtime = "nodejs18.x"
+
+  environment {
+    variables = {
+      # Needs both S3 bucket and DynamoDB table
+      S3_BUCKET_NAME      = aws_s3_bucket.file_storage.bucket
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.file_metadata.name
+    }
+  }
+  tags = var.tags
 }
 
-output "lambda_function_arn" {
-  value = aws_lambda_function.api_handler.arn
+# TODO: Add lambda functions for upload, download, create_folder, etc.
+
+# --- Outputs --- 
+
+# Remove or update previous outputs as they referred to a single handler
+output "list_files_lambda_function_name" {
+  value = aws_lambda_function.list_files.function_name
 }
 
+output "delete_file_lambda_function_name" {
+  value = aws_lambda_function.delete_file.function_name
+}
+
+# Keep role ARN output if useful
 output "lambda_iam_role_arn" {
   value = aws_iam_role.lambda_exec_role.arn
 } 

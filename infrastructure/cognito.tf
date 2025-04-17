@@ -30,9 +30,9 @@ resource "aws_cognito_user_pool_client" "app_client" {
   explicit_auth_flows = ["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
 
   # Configure token validity periods (values are in days)
-  access_token_validity  = 1     # 1 day (min 5m, max 1d)
-  id_token_validity      = 1     # 1 day (min 5m, max 1d)
-  refresh_token_validity = 30    # 30 days (min 60m, max 10y)
+  access_token_validity  = 1  # 1 day (min 5m, max 1d)
+  id_token_validity      = 1  # 1 day (min 5m, max 1d)
+  refresh_token_validity = 30 # 30 days (min 60m, max 10y)
 
   # Allowed OAuth settings (if using hosted UI or federation in the future)
   # callback_urls = ["http://localhost:3000/callback"] # Example for local dev
