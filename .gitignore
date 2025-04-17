@@ -1,0 +1,47 @@
+# Operating System Files
+.DS_Store
+
+# IDE Configuration
+.vscode/
+.idea/
+
+# Environment Variables
+.env*
+
+# Terraform Files
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform.lock.hcl
+
+# Backend Build Artifacts & Dependencies
+# Although covered by backend/.gitignore, include for clarity/redundancy
+backend/node_modules/
+backend/dist/
+backend/build/
+backend/lambda_package.zip
+backend/coverage/
+backend/npm-debug.log*
+backend/yarn-debug.log*
+backend/yarn-error.log*
+
+# Frontend Build Artifacts (Placeholder)
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/.output/
+frontend/coverage/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Infrastructure Build Artifacts (Placeholder)
+infrastructure/node_modules/
+infrastructure/dist/
+infrastructure/build/
+infrastructure/coverage/
+infrastructure/npm-debug.log*
+infrastructure/yarn-debug.log*
+infrastructure/yarn-error.log* 

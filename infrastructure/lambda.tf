@@ -52,7 +52,66 @@ resource "aws_lambda_function" "delete_file" {
   tags = var.tags
 }
 
-# TODO: Add lambda functions for upload, download, create_folder, etc.
+# Lambda function for Creating Upload URL (POST /files/upload-url)
+resource "aws_lambda_function" "create_upload_url" {
+  function_name = "${var.project_name}-create-upload-url"
+  role          = aws_iam_role.lambda_exec_role.arn # Needs s3:PutObject implicitly for signing
+
+  filename         = data.archive_file.lambda_package.output_path
+  source_code_hash = data.archive_file.lambda_package.output_base64sha256
+
+  handler = "handlers/create-upload-url.handler" 
+  runtime = "nodejs18.x"
+
+  environment {
+    variables = {
+      S3_BUCKET_NAME          = aws_s3_bucket.file_storage.bucket
+      UPLOAD_URL_EXPIRATION = "300" # Optional: customize expiration (seconds)
+    }
+  }
+  tags = var.tags
+}
+
+# Lambda function for Creating Download URL (GET /files/{key}/download-url)
+resource "aws_lambda_function" "create_download_url" {
+  function_name = "${var.project_name}-create-download-url"
+  role          = aws_iam_role.lambda_exec_role.arn # Needs s3:GetObject implicitly for signing
+
+  filename         = data.archive_file.lambda_package.output_path
+  source_code_hash = data.archive_file.lambda_package.output_base64sha256
+
+  handler = "handlers/create-download-url.handler"
+  runtime = "nodejs18.x"
+
+  environment {
+    variables = {
+      S3_BUCKET_NAME            = aws_s3_bucket.file_storage.bucket
+      DOWNLOAD_URL_EXPIRATION = "300" # Optional: customize expiration (seconds)
+    }
+  }
+  tags = var.tags
+}
+
+# Lambda function for Creating Folders (POST /folders)
+resource "aws_lambda_function" "create_folder" {
+  function_name = "${var.project_name}-create-folder"
+  role          = aws_iam_role.lambda_exec_role.arn # Needs DynamoDB PutItem
+
+  filename         = data.archive_file.lambda_package.output_path
+  source_code_hash = data.archive_file.lambda_package.output_base64sha256
+
+  handler = "handlers/create-folder.handler"
+  runtime = "nodejs18.x"
+
+  environment {
+    variables = {
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.file_metadata.name
+    }
+  }
+  tags = var.tags
+}
+
+# TODO: Add lambda functions for upload complete?
 
 # --- Outputs --- 
 
@@ -68,4 +127,16 @@ output "delete_file_lambda_function_name" {
 # Keep role ARN output if useful
 output "lambda_iam_role_arn" {
   value = aws_iam_role.lambda_exec_role.arn
+}
+
+output "create_upload_url_lambda_function_name" {
+  value = aws_lambda_function.create_upload_url.function_name
+}
+
+output "create_download_url_lambda_function_name" {
+  value = aws_lambda_function.create_download_url.function_name
+}
+
+output "create_folder_lambda_function_name" {
+  value = aws_lambda_function.create_folder.function_name
 } 

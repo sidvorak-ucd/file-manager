@@ -29,8 +29,11 @@ exports.handler = async (event) => {
   }
 
   // Construct the S3 key (assuming objects are stored under userId prefix)
+  // IMPORTANT: Ensure fileKey path parameter correctly represents the path *relative* to the user's root.
+  // Example: If URL is /files/documents/report.pdf, fileKey should be 'documents/report.pdf'
+  // If URL is /files/image.jpg, fileKey should be 'image.jpg'
   const s3Key = `${userId}/${fileKey}`;
-  // DynamoDB key uses the raw fileKey (which includes the full path)
+  // DynamoDB key uses the raw fileKey (which includes the full path relative to user)
   const dynamoDbKey = fileKey;
 
   console.log(
@@ -38,26 +41,31 @@ exports.handler = async (event) => {
   );
 
   try {
-    // TODO: Implement S3 delete
-    // const deleteS3Command = new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: s3Key });
-    // await s3Client.send(deleteS3Command);
-    // console.log(`Successfully deleted from S3: ${s3Key}`);
+    // 1. Delete item from DynamoDB first (or S3 first, depends on desired atomicity/rollback)
+    // Let's delete from DB first. If S3 fails, the metadata is gone, but the file might remain (orphan).
+    console.log(`Deleting DynamoDB item: ${dynamoDbKey} for user ${userId}`);
+    const deleteDbCommand = new DeleteCommand({
+      TableName: TABLE_NAME,
+      Key: { owner_id: userId, file_path: dynamoDbKey },
+      // Optional: Add ConditionExpression to ensure item exists or belongs to user
+    });
+    await docClient.send(deleteDbCommand);
+    console.log(`Successfully deleted from DynamoDB: ${dynamoDbKey}`);
 
-    // TODO: Implement DynamoDB delete
-    // const deleteDbCommand = new DeleteCommand({
-    //     TableName: TABLE_NAME,
-    //     Key: { owner_id: userId, file_path: dynamoDbKey }
-    // });
-    // await docClient.send(deleteDbCommand);
-    // console.log(`Successfully deleted from DynamoDB: ${dynamoDbKey}`);
+    // 2. Delete object from S3
+    console.log(`Deleting S3 object: ${s3Key}`);
+    const deleteS3Command = new DeleteObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: s3Key,
+    });
+    await s3Client.send(deleteS3Command);
+    console.log(`Successfully deleted from S3: ${s3Key}`);
 
     return {
-      statusCode: 200, // Or 204 No Content
-      body: JSON.stringify({
-        message: `File ${fileKey} deletion logic not fully implemented yet.`,
-      }),
+      statusCode: 204, // Use 204 No Content for successful deletions
+      // No body needed for 204
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/json", // Content-Type might not be strictly necessary for 204
         "Access-Control-Allow-Origin": "*", // Adjust in production
       },
     };

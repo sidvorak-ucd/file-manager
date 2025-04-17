@@ -45,6 +45,30 @@ resource "aws_apigatewayv2_integration" "delete_file_integration" {
   payload_format_version = "2.0"
 }
 
+# Lambda Integration for Create Upload URL
+resource "aws_apigatewayv2_integration" "create_upload_url_integration" {
+  api_id                 = aws_apigatewayv2_api.http_api.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.create_upload_url.invoke_arn
+  payload_format_version = "2.0"
+}
+
+# Lambda Integration for Create Download URL
+resource "aws_apigatewayv2_integration" "create_download_url_integration" {
+  api_id                 = aws_apigatewayv2_api.http_api.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.create_download_url.invoke_arn
+  payload_format_version = "2.0"
+}
+
+# Lambda Integration for Create Folder
+resource "aws_apigatewayv2_integration" "create_folder_integration" {
+  api_id                 = aws_apigatewayv2_api.http_api.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.create_folder.invoke_arn
+  payload_format_version = "2.0"
+}
+
 # TODO: Add integrations for other Lambda functions
 
 # --- Routes --- 
@@ -72,7 +96,40 @@ resource "aws_apigatewayv2_route" "delete_file_route" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito_auth.id
 }
 
-# TODO: Add routes for other methods/paths (POST /files, GET /files/{key}, POST /folders)
+# Route for POST /files/upload-url -> create_upload_url Lambda
+resource "aws_apigatewayv2_route" "create_upload_url_route" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "POST /files/upload-url"
+
+  target = "integrations/${aws_apigatewayv2_integration.create_upload_url_integration.id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_auth.id
+}
+
+# Route for GET /files/{fileKey}/download-url -> create_download_url Lambda
+resource "aws_apigatewayv2_route" "create_download_url_route" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /files/{fileKey}/download-url"
+
+  target = "integrations/${aws_apigatewayv2_integration.create_download_url_integration.id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_auth.id
+}
+
+# Route for POST /folders -> create_folder Lambda
+resource "aws_apigatewayv2_route" "create_folder_route" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "POST /folders"
+
+  target = "integrations/${aws_apigatewayv2_integration.create_folder_integration.id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_auth.id
+}
+
+# TODO: Add routes for other methods/paths
 
 # OPTIONS route for CORS preflight (does not need authorization)
 resource "aws_apigatewayv2_route" "options_route" {
@@ -129,6 +186,36 @@ resource "aws_lambda_permission" "invoke_delete_file_permission" {
   principal     = "apigateway.amazonaws.com"
 
   source_arn = "${aws_apigatewayv2_api.http_api.execution_arn}/*/DELETE/files/*"
+}
+
+# Permission for API Gateway to invoke the create_upload_url Lambda function
+resource "aws_lambda_permission" "invoke_create_upload_url_permission" {
+  statement_id  = "AllowAPIGatewayInvokeCreateUploadUrl"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.create_upload_url.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_apigatewayv2_api.http_api.execution_arn}/*/POST/files/upload-url"
+}
+
+# Permission for API Gateway to invoke the create_download_url Lambda function
+resource "aws_lambda_permission" "invoke_create_download_url_permission" {
+  statement_id  = "AllowAPIGatewayInvokeCreateDownloadUrl"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.create_download_url.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_apigatewayv2_api.http_api.execution_arn}/*/GET/files/*/download-url"
+}
+
+# Permission for API Gateway to invoke the create_folder Lambda function
+resource "aws_lambda_permission" "invoke_create_folder_permission" {
+  statement_id  = "AllowAPIGatewayInvokeCreateFolder"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.create_folder.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_apigatewayv2_api.http_api.execution_arn}/*/POST/folders"
 }
 
 # TODO: Add permissions for other Lambda functions
