@@ -1,0 +1,20 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Backend Lambda Handlers
+
+The backend logic is implemented as individual AWS Lambda functions located in [backend/handlers](mdc:backend/handlers).
+
+- **List Files/Folders**: [backend/handlers/list-files.js](mdc:backend/handlers/list-files.js) - Handles `GET /files` requests, queries DynamoDB based on path.
+- **Create Folder**: [backend/handlers/create-folder.js](mdc:backend/handlers/create-folder.js) - Handles `POST /folders`, creates metadata entry in DynamoDB.
+- **Get Upload URL**: [backend/handlers/create-upload-url.js](mdc:backend/handlers/create-upload-url.js) - Handles `POST /files/upload-url`, generates S3 pre-signed PUT URL.
+- **Get Download URL**: [backend/handlers/create-download-url.js](mdc:backend/handlers/create-download-url.js) - Handles `GET /files/{fileKey+}/download-url`, generates S3 pre-signed GET URL.
+- **Delete File**: [backend/handlers/delete-file.js](mdc:backend/handlers/delete-file.js) - Handles `DELETE /files/{fileKey+}`, deletes item from DynamoDB and object from S3.
+- **Create Metadata (S3 Trigger)**: [backend/handlers/create-metadata.js](mdc:backend/handlers/create-metadata.js) - (Potentially triggered by S3 events, see [PRD.md](mdc:PRD.md)) Creates DynamoDB metadata after S3 upload.
+
+API Gateway routes defined in [infrastructure/api_gateway.tf](mdc:infrastructure/api_gateway.tf) map HTTP requests to these Lambda functions.
+
+Shared AWS client initialization is in [backend/utils/aws-clients.js](mdc:backend/utils/aws-clients.js).
+Unit tests are co-located with handlers (e.g., `*.test.js`).

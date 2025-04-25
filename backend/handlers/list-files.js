@@ -19,35 +19,86 @@ exports.handler = async (event) => {
     };
   }
 
-  // Default pathPrefix to root if not provided or empty
-  const pathPrefix = queryParams.path || "/";
-  const queryPath =
-    pathPrefix === "/"
-      ? "/"
-      : pathPrefix.endsWith("/")
-      ? pathPrefix
-      : pathPrefix + "/";
+  const requestedPath = queryParams.path || "/";
 
-  const params = {
-    TableName: TABLE_NAME,
-    KeyConditionExpression:
-      "owner_id = :userId AND begins_with(file_path, :pathPrefix)",
-    ExpressionAttributeValues: {
-      ":userId": userId,
-      ":pathPrefix": queryPath,
-    },
-    // ProjectionExpression: "file_path, filename, size, upload_timestamp, is_folder" // Example
-  };
+  let params;
+  let isRootQuery = false; // Flag to indicate if we need post-query filtering for root
+
+  if (requestedPath === "/") {
+    // Query for ALL items for the user
+    isRootQuery = true;
+    params = {
+      TableName: TABLE_NAME,
+      KeyConditionExpression: "owner_id = :userId",
+      ExpressionAttributeValues: {
+        ":userId": userId,
+      },
+    };
+  } else {
+    // Ensure path ends with a slash for begins_with query
+    const queryPath = requestedPath.endsWith("/")
+      ? requestedPath
+      : requestedPath + "/";
+    // Query for items starting with the folder path
+    params = {
+      TableName: TABLE_NAME,
+      KeyConditionExpression:
+        "owner_id = :userId AND begins_with(file_path, :pathPrefix)",
+      ExpressionAttributeValues: {
+        ":userId": userId,
+        ":pathPrefix": queryPath,
+      },
+    };
+  }
+
+  console.log("DynamoDB Query Params:", JSON.stringify(params));
 
   try {
     const command = new QueryCommand(params);
     const data = await docClient.send(command);
-    const items = data.Items || [];
+    let items = data.Items || [];
     console.log(
-      `Found ${items.length} items for user ${userId}, prefix ${queryPath}`
+      `Query successful, initially found ${items.length} items for user ${userId}, path ${requestedPath}`
     );
 
-    // TODO: Further filtering for direct children if needed
+    // --- Post-Query Filtering ---
+    const normalizedRequestPath = requestedPath.endsWith("/")
+      ? requestedPath
+      : requestedPath + "/";
+    const requestPathDepth = normalizedRequestPath
+      .split("/")
+      .filter(Boolean).length;
+
+    items = items.filter((item) => {
+      const itemPath = item.file_path;
+      const itemPathParts = itemPath.split("/").filter(Boolean);
+
+      // Determine the effective depth of the item
+      // A folder like 'a/b/c/' has depth 3 (parts: a, b, c)
+      // A file like 'a/b/file.txt' has depth 3 (parts: a, b, file.txt)
+      const itemDepth = itemPathParts.length;
+
+      if (isRootQuery) {
+        // Root items: depth is 1
+        return itemDepth === 1;
+      } else {
+        // Subdirectory items:
+        // 1. Must start with the requested path
+        // 2. Depth must be exactly one more than the requested path's depth
+        // 3. Exclude the folder itself (e.g., if querying 'a/b/', exclude item 'a/b/')
+        if (itemPath === normalizedRequestPath && item.is_folder) {
+          return false;
+        }
+        return (
+          itemPath.startsWith(normalizedRequestPath) &&
+          itemDepth === requestPathDepth + 1
+        );
+      }
+    });
+    console.log(
+      `Found ${items.length} direct children items after filtering for path '${requestedPath}'.`
+    );
+    // --- End Post-Query Filtering ---
 
     return {
       statusCode: 200,

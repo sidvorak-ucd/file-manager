@@ -23,6 +23,15 @@ This project implements a secure, scalable, cloud-based file management web appl
 - **Infrastructure**: All AWS resources (S3, DynamoDB, Lambda, API Gateway, Cognito, IAM roles/policies) are managed via Terraform.
 - **Authentication**: User authentication is handled by AWS Cognito, using JWT for session management.
 
+## Current Features (Implemented)
+
+- **User Authentication**: Login/logout via AWS Cognito.
+- **File Listing**: View files and folders within the current directory.
+- **Folder Navigation**: Navigate into subfolders and back up to parent folders.
+- **Folder Creation**: Create new folders within the current directory.
+- **File Upload**: Upload files to the current directory via pre-signed S3 URLs.
+- **File Deletion**: Delete files (folder deletion not yet supported) with confirmation.
+
 ## Testing
 
 - The backend includes a suite of unit tests written using Jest.

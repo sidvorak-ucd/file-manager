@@ -27,7 +27,11 @@ resource "aws_cognito_user_pool_client" "app_client" {
 
   # Settings for a web application (public client)
   generate_secret     = false
-  explicit_auth_flows = ["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
+  explicit_auth_flows = [
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH"
+  ]
 
   # Configure token validity periods (values are in days)
   access_token_validity  = 1  # 1 day (min 5m, max 1d)

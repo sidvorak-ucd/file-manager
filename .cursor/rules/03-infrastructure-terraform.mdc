@@ -1,0 +1,20 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Infrastructure (Terraform)
+
+The AWS infrastructure is defined using Terraform files located in the [infrastructure](mdc:infrastructure) directory.
+
+Key configuration files:
+- **Main Configuration**: [infrastructure/main.tf](mdc:infrastructure/main.tf) - Core setup, providers, S3 notification config.
+- **API Gateway**: [infrastructure/api_gateway.tf](mdc:infrastructure/api_gateway.tf) - Defines the HTTP API, routes, integrations, authorizer, stage.
+- **Lambda**: [infrastructure/lambda.tf](mdc:infrastructure/lambda.tf) - Defines all Lambda function resources.
+- **S3**: [infrastructure/s3.tf](mdc:infrastructure/s3.tf) - Defines the S3 bucket for file storage, CORS, encryption, etc.
+- **DynamoDB**: [infrastructure/dynamodb.tf](mdc:infrastructure/dynamodb.tf) - Defines the DynamoDB table for metadata.
+- **Cognito**: [infrastructure/cognito.tf](mdc:infrastructure/cognito.tf) - Defines the User Pool and App Client for authentication.
+- **IAM**: [infrastructure/iam.tf](mdc:infrastructure/iam.tf) - Defines IAM roles and policies for Lambda execution.
+- **Variables**: [infrastructure/variables.tf](mdc:infrastructure/variables.tf) - Input variables for customization (region, project name, tags).
+
+Run `terraform apply` within the [infrastructure](mdc:infrastructure) directory to deploy changes.

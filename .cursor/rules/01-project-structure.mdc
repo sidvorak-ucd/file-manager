@@ -1,0 +1,16 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Project Structure Overview
+
+This project implements an AWS S3 File Manager.
+
+- **Frontend**: The React/TypeScript frontend code resides in [frontend](mdc:frontend).
+  - The main UI component is [frontend/src/components/FileManager.tsx](mdc:frontend/src/components/FileManager.tsx).
+- **Backend**: Serverless Node.js backend using AWS Lambda handlers is in [backend](mdc:backend).
+  - Individual Lambda handlers are located in [backend/handlers](mdc:backend/handlers).
+  - Shared utilities are in [backend/utils](mdc:backend/utils).
+- **Infrastructure**: AWS infrastructure (S3, DynamoDB, Lambda, API Gateway, Cognito) is defined using Terraform in [infrastructure](mdc:infrastructure).
+- **Documentation**: Product requirements are in [PRD.md](mdc:PRD.md) and project summary is in [README.md](mdc:README.md).

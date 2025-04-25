@@ -1,0 +1,13 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Frontend Structure
+
+The frontend is a React application using TypeScript and Material UI, located in [frontend](mdc:frontend).
+
+- **Main Component**: The core logic and UI for the file manager interface is within [frontend/src/components/FileManager.tsx](mdc:frontend/src/components/FileManager.tsx).
+- **Entry Point**: The application entry point is likely [frontend/src/main.tsx](mdc:frontend/src/main.tsx).
+- **Root Component**: The main application component wrapping the authenticator and FileManager is [frontend/src/App.tsx](mdc:frontend/src/App.tsx).
+- **Amplify Config**: AWS Amplify configuration (API endpoints, Cognito details) is typically generated into [frontend/src/aws-exports.js](mdc:frontend/src/aws-exports.js).

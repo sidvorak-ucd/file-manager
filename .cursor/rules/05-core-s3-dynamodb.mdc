@@ -1,0 +1,19 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Core Concept: Files, Folders, S3, and DynamoDB
+
+This application manages files stored in S3 using metadata stored in DynamoDB.
+
+- **S3**: Stores the actual file content (objects).
+  - Object keys typically follow the pattern `<userId>/<filePath>`, e.g., `us-east-1:1234abcd/documents/report.pdf`.
+- **DynamoDB**: Stores metadata about files AND folders in a single table defined in [infrastructure/dynamodb.tf](mdc:infrastructure/dynamodb.tf).
+  - **Partition Key**: `owner_id` (Cognito User Sub).
+  - **Sort Key**: `file_path` (Full logical path relative to user root, e.g., `documents/report.pdf` or `documents/archive/`).
+  - **Attributes**: Includes `filename`, `is_folder` (boolean), `size` (0 for folders), `created_at`.
+- **Folders**: Folders primarily exist as metadata entries in DynamoDB where `is_folder` is `true` and `file_path` ends with `/`.
+  - Creating a folder (`POST /folders`) only creates the DynamoDB item; it does **not** create a zero-byte object in S3 by default.
+- **Listing**: Listing contents (`GET /files`) queries DynamoDB for items under the specified `owner_id` and `file_path` prefix, then filters for direct children.
+- **Linking**: The `file_path` in DynamoDB corresponds to the path segment in the S3 object key (after the `owner_id` prefix).
